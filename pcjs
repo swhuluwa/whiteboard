@@ -1,0 +1,814 @@
+var canvasImgSrc = "";
+var canvasTotalPage = 0;
+var canvasCurPage = 0;
+//开启白板
+var  canvas = function(){
+    oC = document.getElementById('c1');
+    oC.style.background='white';
+    oCG = oC.getContext('2d');
+    oCG.lineJoin='round';
+    oCG.lineCap='round';
+    oCG.lineWidth=lineWidth;
+    oC1 = document.getElementById('c2');
+    oCG1 = oC1.getContext('2d');
+    oCG1.lineJoin='round';
+    oCG1.lineCap='round';
+    oCG1.lineWidth=lineWidth;
+    oC2 = document.getElementById('c3');
+    oCG2 = oC2.getContext('2d');
+    oC.onmousedown =OcMouseDown; 
+}
+
+//canvas Fn
+//2018年3月14日14:25:27
+//summary
+//@param canvas 
+//@param c1
+//@param c2
+//summary
+var oC0 =null;// document.getElementById('c1');
+
+var oC =null;// document.getElementById('c1');
+
+var oCG = null;//oC.getContext('2d');
+
+var oC1 = null;//document.getElementById('c2');
+
+var oCG1 = null;//oC1.getContext('2d');
+
+var oC2=null;//third
+
+var oCG2=null;//third
+
+var OcMouseDown=null;//mousefn
+
+var lineWidth=2;//线条宽度
+
+var pathList = new Array();//已画list
+
+var allList=new Array();//所有数据
+
+var repaintList=new Array();//撤销list
+
+var isEraser=false;//橡皮擦
+
+var isLaser=false;//激光笔
+
+var isHighLighter=false;//荧光笔
+
+var isColorShow=false;//颜色工具
+
+var myColor='black';//默认颜色
+
+var isWhiteBorad=false;//是否进入会商
+
+var globalCompositeOperation='source-over';
+
+var imgObj=null;//img 对象
+
+var iWidth=null,
+    iHeight=null;
+
+var myMeetingId=null;
+
+var param={
+    strokeStyle:myColor,
+    globalAlpha:1,
+    lineWidth:lineWidth,
+    operation:1,
+    canvasWidth:$(oC).attr("width")||600,
+    canvasHeight:$(oC).attr("height")||400,
+	pImgheight:null,
+	pImgwidth:null,
+	p0left:null,
+	p0right:null,
+	scale:1,
+    globalCompositeOperation:globalCompositeOperation,
+    list:pathList
+};
+
+var draw=function(list1,width,height,scale,nClientType,pw,ph) {
+      //绘制
+        for (var i = 0; i < list1.length; i++) {
+            var item =null;
+            item= list1[i];
+            switch (item.name) {
+               case "moveTo":
+				oCG.beginPath();
+				if(nClientType==3)
+				{
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.moveTo(param.p0left+ item.x/(pw)*param.pImgwidth,param.p0right+ item.y/(ph)*param.pImgheight);
+					}
+					else
+					{
+						oCG.moveTo( item.x/(width)*param.canvasWidth,item.y/(height)*param.canvasHeight);
+					}
+				
+				}
+				else if(nClientType==2)
+				{
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.moveTo(param.p0left+ item.x/(pw*scale)*param.pImgwidth, param.p0right+ item.y/(ph*scale)*param.pImgheight);
+					}
+					else
+					{
+						oCG.moveTo(item.x/(width*scale)*param.canvasWidth, item.y/(height*scale)*param.canvasHeight);
+					}
+					
+				}
+				else if(nClientType==1)
+				{
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.moveTo(param.p0left+ item.x/(pw)*param.pImgwidth, param.p0right+ item.y/(ph)*param.pImgheight);
+					}
+					else
+					{
+						oCG.moveTo(item.x/(width)*param.canvasWidth, item.y/(height)*param.canvasHeight);
+					}
+					
+				}
+				break;
+			case "lineTo":
+			    if(nClientType==3)
+				{
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.lineTo(param.p0left+ item.x/(pw)*param.pImgwidth,param.p0right+  item.y/(ph)*param.pImgheight);
+					}
+					else
+					{
+				       oCG.lineTo(item.x/(width)*param.canvasWidth, item.y/(height)*param.canvasHeight);		
+					}
+				
+				}
+				else if(nClientType==2)
+				{
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.lineTo(param.p0left+ item.x/(pw*scale)*param.pImgwidth, param.p0right+ item.y/(ph*scale)*param.pImgheight);
+					}
+					else
+					{
+						oCG.lineTo(item.x/(width*scale)*param.canvasWidth, item.y/(height*scale)*param.canvasHeight);
+					}
+					
+				}
+				else if(nClientType==1){
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.lineTo(param.p0left+ item.x/(pw)*param.pImgwidth, param.p0right+ item.y/(ph)*param.pImgheight);
+					}
+					else
+					{
+						oCG.lineTo(item.x/(width)*param.canvasWidth, item.y/(height)*param.canvasHeight);
+					}
+					
+				}
+				break;
+                case "stroke":
+                    oCG.stroke();
+                    oCG.closePath();
+                    break;
+                case "move":
+          //激光笔 功能  弃用
+                    oCG.beginPath();
+                    oCG.rect(0, 0, oC.width, oC.height);
+                    oCG.fillStyle = 'white';
+                    oCG.fill();
+                    oCG.drawImage(oC1,0,0,oC1.width, oC1.height);
+                    oCG.fillStyle = 'red';
+                    oCG.lineWidth = 2;
+                    // Draw particle with $1000000 special effects
+                    oCG.beginPath();
+                    oCG.arc(item.x, item.y, 5, 0, 1, true);
+                    oCG.fill();
+                    break;
+            }
+        }
+    //还原本地设置
+    oCG.globalAlpha=1;//暂未用到透明度值
+    oCG.strokeStyle=myColor;
+    oCG.lineWidth = lineWidth;
+    oCG.globalCompositeOperation=globalCompositeOperation;
+};
+
+var colorToolShow=function(){
+  isColorShow=!isColorShow;
+    var colorTool=document.getElementById('colorTool'); //$('#colorTool');colorTool.style.display='none';
+    if (isColorShow) {
+        var color=$('#color');
+        colorTool.style.display='';
+        colorTool.style.left=color.offset().left-40+'px';
+        colorTool.style.top=parseInt(color.offset().top)+ 48+'px';
+    }
+    else
+    {
+        colorTool.style.display='none';
+    }
+} 
+//激光笔
+var laser=function(value){
+  //弃用
+    isLaser=value;
+    if(isLaser==false){
+    param.operation=1;
+    document.getElementById('c1').style.cursor='url(images/gangbi.ico),auto';
+    }
+    else{
+    param.operation=3;
+    document.getElementById('c1').style.cursor='url(images/jiguang.ico),auto';
+    }               
+}
+
+//荧光笔
+var highLighter=function(value){
+  isHighLighter=value;
+    if (isHighLighter) {
+        //更换鼠标样式
+        document.getElementById('c1').style.cursor='url(images/yingguangbi.ico),auto';
+        //sendMsG todo另需清除对方界面
+        isHighLighter=true;
+        isEraser=false;
+        lineWidth=6;
+        //设置本地画布数据
+        oCG.save();
+        oCG.strokeStyle=myColor;
+        //oCG.globalAlpha = 0.4;
+        oCG.lineWidth = 6;
+        //*****测试*****
+        //设置传参画布数据
+        param.strokeStyle=myColor;
+        //param.globalAlpha = 0.4;
+        param.lineWidth=6;
+
+
+    }else{
+        document.getElementById('c1').style.cursor='url(images/gangbi.ico),auto';
+        isHighLighter=false;
+        //lineWidth=2;
+        //设置本地画布数据
+        oCG.save();
+        oCG.strokeStyle=myColor;
+        //oCG.globalAlpha = 1;
+        oCG.lineWidth=lineWidth;
+        //oCG.restore();
+        //*****测试*****
+        //设置传参画布数据
+        param.strokeStyle=myColor;
+        //param.globalAlpha = 1;
+        param.lineWidth=lineWidth;
+        
+    }
+}
+
+//changeColor
+var changeColor=function(e){
+   myColor=e.style.backgroundColor;
+   if (oCG.strokeStyle!='white'&&oCG.strokeStyle!='#ffffff') {
+   oCG.strokeStyle=myColor;
+   param.strokeStyle=myColor;
+   }
+   colorToolShow();
+}
+//换页
+var CurPage=function(CurPage){
+  //清空canvas
+  oCG.beginPath(); 
+  oCG.clearRect(0,0,oC.width,oC.height); 
+  oCG.closePath();
+  var canvasData={
+    SeqNo:1,
+    nMeetingID:parseInt($("#c_r_right_title3").attr("nMeetingID")),
+    nCurPage:CurPage,
+    nTotalPage:canvasTotalPage,
+    strPicHttpAddr:canvasImgSrc,
+    nOperate:5,
+    nClientType:1,
+    strContent:""
+    };
+  myOcxMsg.updateWhiteboard(canvasData);   //上传白板内容
+};
+var clearRect=function(){
+    //清空canvas
+    oCG.beginPath(); 
+    oCG.clearRect(0,0,oC.width,oC.height); 
+    oCG.closePath(); 
+    param.operation=2;
+    param.list=[];
+    var canvasData={
+        SeqNo:1,
+        nMeetingID:parseInt($("#c_r_right_title3").attr("nMeetingID")),
+        nCurPage:canvasCurPage,
+        nTotalPage:canvasTotalPage,
+        strPicHttpAddr:canvasImgSrc,
+        nOperate:param.operation,
+        nClientType:1,
+        strContent:$.trim(JSON.stringify(param)).replace(/"/g,'\\\"')
+        };
+    myOcxMsg.updateWhiteboard(canvasData);   //上传白板内容
+    param.operation=1;
+};
+
+var clearRectSelf=function(){
+    //退出会商 清空本地canvas
+    oCG.beginPath(); 
+    oCG.clearRect(0,0,oC.width,oC.height); 
+    oCG.closePath(); 
+    canvasTotalPage = 0;
+}
+
+//绘制canvas
+var getDraw= function(data){
+  
+    canvasTotalPage = data.nTotalPage;
+    if(canvasTotalPage>1){
+        $("#beforeP").css("display","block");
+        $("#afterP").css("display","block");
+        $("#pageDiv").css("display","block");
+        $("#pageSpan2").html("/"+canvasTotalPage);
+    }else{
+        $("#beforeP").css("display","none");
+        $("#afterP").css("display","none");
+        $("#pageDiv").css("display","none");
+    }
+    //对方接收到消息，描绘canvas
+
+    if(canvasCurPage!=data.nCurPage||canvasImgSrc != data.strPicHttpAddr){
+     //oC.style.background = 'url('+data.strPicHttpAddr+') no-repeat 0 0/600px 400px'; 
+        oCG.beginPath(); 
+        oCG.clearRect(0,0,oC.width,oC.height); 
+        oCG.closePath();
+		//新增
+		iWidth=data.nPicWidth;                                                       
+		iHeight=data.nPicHeight;
+		//add
+        canvasImgSrc = data.strPicHttpAddr;
+        oC.style.background = 'url('+canvasImgSrc+') no-repeat center center/contain';
+        canvasCurPage = data.nCurPage;
+		if(iHeight!=''&&iWidth!=''&&iHeight&&iWidth)
+	    {
+		 range(0,0);  
+	    }
+        $("#pageSpan1").html(canvasCurPage);
+    }
+    var getListMsg=null;
+	
+    if(data.lstOperations[0]!=[]&&data.lstOperations[0]!='[]'&&data.lstOperations[0]!='undefined')
+    {
+      var lstOperations=data.lstOperations;
+      var len= lstOperations.length,nClientType=null;
+      var msg=null,msg2=null;
+      for(var m=0;m<len;m++)
+      {
+        msg=lstOperations[m].strContent;
+		nClientType=lstOperations[m].nClientType;
+        msg2=msg.replace(/[\'\\\/\b\f\n\r\t]/g, '');
+        getListMsg=JSON.parse(msg2);
+      if(getListMsg.operation==2)
+          {
+            oCG.beginPath(); 
+            oCG.clearRect(0,0,oC.width,oC.height); 
+            oCG.closePath(); 
+          }
+          else if(getListMsg.operation==1){
+           oCG.strokeStyle=getListMsg.strokeStyle;
+           oCG.lineWidth = getListMsg.lineWidth;
+           oCG.globalAlpha=getListMsg.globalAlpha;
+           oCG.globalCompositeOperation=getListMsg.globalCompositeOperation;
+          }
+          var list=null,width=null,height=null,scale=null,pw=null,ph=null;
+          list=getListMsg.list;
+          width=getListMsg.canvasWidth;
+          height=getListMsg.canvasHeight;
+		  scale=getListMsg.scale;
+		  pw=getListMsg.pImgwidth;
+		  ph=getListMsg.pImgheight;
+          if(list&&list.length>0){
+			  
+              draw(list,width,height,scale,nClientType,pw,ph); 
+          }
+    }
+    }
+    else{
+        console.log("数据为空返回");
+        return ;
+    }
+};
+var pen=function(){
+  lineWidth=2;
+    eraser(false);
+    highLighter(false);
+    //laser(false);
+}
+
+var eraser=function(value){
+    //橡皮擦
+    isEraser=value;
+    if (isEraser) {
+        //更换鼠标样式
+        document.getElementById('c1').style.cursor='url(images/xiangpi.ico),auto';
+        //sendMsG todo另需清除对方界面
+        isEraser=true;
+        globalCompositeOperation='destination-out';
+        //设置本地画布数据
+        oCG.save();
+        oCG.globalCompositeOperation=globalCompositeOperation;
+        oCG.strokeStyle='white';
+        oCG.lineWidth =12;
+        //*****测试*****
+        //设置传参画布数据
+        param.globalCompositeOperation=globalCompositeOperation;
+        param.strokeStyle='white';
+        param.lineWidth=12;
+
+    }else{
+        document.getElementById('c1').style.cursor='url(images/gangbi.ico),auto';
+        isEraser=false;
+        globalCompositeOperation='source-over';
+        //设置本地画布数据
+        oCG1.save();
+        oCG.globalCompositeOperation=globalCompositeOperation;
+        oCG.strokeStyle=myColor;
+        oCG.lineWidth=lineWidth;
+        //*****测试*****
+        //设置传参画布数据
+        param.globalCompositeOperation=globalCompositeOperation;
+        param.strokeStyle=myColor;
+        param.lineWidth=lineWidth;
+        
+    }
+};
+
+function range(w,h){
+	var offsetLeft=oC.offsetLeft,//左距离X  CANVAS(offsetLeft,offsetTop)
+	    offsetTop=oC.offsetTop,//上距离Y
+		oCwidth=param.canvasWidth,//宽高
+		oCheight=param.canvasHeight,
+		centerW=oCwidth/2,//一半宽高
+		centerH=oCheight/2,
+		offsetRight=parseFloat(offsetLeft)+parseFloat(oCwidth),//右距离X
+		offsetBottom=parseFloat(offsetTop)+parseFloat(oCheight),//下距离Y
+		imgWidth=iWidth,//imgObj.width,
+		imgHeight=iHeight,//.height,
+		pImgwidth=null,
+		pImgheight=null;
+		
+	if(oCwidth/imgWidth>oCheight/imgHeight){
+		pImgwidth=oCheight/imgHeight*imgWidth;
+		pImgheight=oCheight;
+	}
+	else{
+		pImgheight=oCwidth/imgWidth*imgHeight;
+		pImgwidth=oCwidth;
+	}  
+	
+    var oCpImgwidth=pImgwidth/2,
+		oCpImgheight=pImgheight/2;//canvas img (centerW-oCpImgwidth+offsetLeft,centerH-oCpImgheight+offsetTop)
+		
+	
+	param.pImgheight=pImgheight;                                                       
+	param.pImgwidth=pImgwidth;
+	
+	var p={
+		x:centerW-oCpImgwidth+parseFloat(offsetLeft),
+		y:centerH-oCpImgheight+parseFloat(offsetTop)
+	};
+	
+	
+	param.p0left=p.x;
+	param.p0right=p.y;
+	var p0={
+		x:p.x+parseFloat(pImgwidth),
+		y:p.y+parseFloat(pImgheight)
+	};
+	//console.log('w:'+w+'h:'+h+'p.x:'+p.x+'p.y:'+p.y+'canvas.x:'+offsetLeft+'canvas.y:'+offsetTop+'canvasW:'+oCwidth+'canvasH:'+oCheight+'picw:'+imgWidth+'picH:'+imgHeight);
+	
+		return({
+			x:w-p.x,
+			y:h-p.y,
+			w:pImgwidth,
+			h:pImgheight
+		});
+	
+	
+	
+	
+}
+
+
+var undo=function(){
+    //撤销
+};
+//show canvas
+var showCanvas=function(){
+   startWhite();
+}
+var closeCanvas=function(){
+   endWhite();
+}
+//退出白板
+var exitWhiteboard=function(){
+    var exitParam={
+        SeqNo:1,
+        nMeetingID:parseInt($("#c_r_right_title3").attr("nMeetingID"))||myMeetingId
+    };
+    myOcxMsg.exitWhiteboard(exitParam);
+    if(document.getElementById('play6'))
+    {
+        document.getElementById('play6').style.display='';
+    }
+    if( document.getElementById('canvasFb'))
+    {
+         document.getElementById('canvasFb').style.display='none';
+    }
+    /*if(document.getElementById('canvasShow'))
+    {
+      document.getElementById('canvasShow').children[0].src='images/bendigongxiang.png';    
+    }*/
+    if (document.getElementById('canvasImg')) {
+      $("#canvasImg").css("display","none");
+    }
+    clearRectSelf();
+  if (isWhiteBorad) {
+    isWhiteBorad=false;
+    init();
+    if (isColorShow) {
+       colorToolShow();
+    }
+  }
+}
+//进入白板
+var enterWhite=function(){
+    if(isWhiteBorad==false){
+      canvas();
+    }
+    myMeetingId=parseInt($("#c_r_right_title3").attr('nmeetingid')) ;
+      var param={
+          SeqNo:1,
+          nMeetingID:parseInt($("#c_r_right_title3").attr('nmeetingid')) 
+      };
+      myOcxMsg.enterWhiteboard(param);
+     //document.getElementById('canvasShow').children[0].src='images/jieshubendigongxiang.png';
+     document.getElementById('c1').style.cursor='url(images/gangbi.ico),auto';
+     $("#canvasImg").css("display","block");
+     document.getElementById('play6').style.display='none';
+     document.getElementById('canvasFb').style.display='';
+	 w=parseInt(oC.offsetWidth);
+     h=parseInt(oC.offsetHeight);
+     if(isWhiteBorad==false)
+     {
+        isWhiteBorad=true;
+    init();   
+     }
+     
+}
+var left=null,top=null;
+OcMouseDown=function(ev) {
+  var ev = ev || window.event;
+    //oCG.beginPath();
+    //oCG.moveTo(ev.clientX - $('#c1').offset().left, ev.clientY - $('#c1').offset().top); //ev.clientX-oC.offsetLeft,ev.clientY-oC.offsetTop鼠标在当前画布上X,Y坐标
+    left=(ev.pageX - $('#c1').offset().left)*(1/canvasSize);
+    top=(ev.pageY - $('#c1').offset().top)*(1/canvasSize);
+  //判断橡皮擦
+  if (isEraser) {
+     //重置再赋值
+     globalCompositeOperation="destination-out";
+     oCG.globalCompositeOperation = globalCompositeOperation;
+     param.globalCompositeOperation=globalCompositeOperation;
+     //橡皮擦 圆
+     oCG.save();
+     oCG.beginPath();
+     oCG.arc(left,top,1,0,2*Math.PI);
+     oCG.fill();
+     oCG.restore();
+  }
+  else
+  {
+    globalCompositeOperation="source-over";
+    oCG.globalCompositeOperation = globalCompositeOperation;
+    param.globalCompositeOperation=globalCompositeOperation;
+  }
+  //post数据  
+    //pathList.push({ name: "moveTo", x: ev.clientX - $('#c1').offset().left, y: ev.clientY - $('#c1').offset().top });
+    document.onmousemove = function(ev) {
+    oCG.beginPath();
+    if (oCG.strokeStyle!=param.strokeStyle) {
+        oCG.strokeStyle=param.strokeStyle;
+    }
+    if (oCG.lineWidth!=param.lineWidth) {
+        oCG.lineWidth=param.lineWidth;
+    }
+	oCG.moveTo(left,top);
+	var pd=null;
+	var pdleft=null,pdright=null;
+	if(iWidth!=0&&iWidth!=null)
+	{
+		pd=range(left,top);
+	}
+	if(pd!=null)
+	{
+		pdleft=pd.x;
+		pdright=pd.y;
+	} 
+		
+    pathList.push({ name: "moveTo", x: pdleft||left, y: pdright||top });
+	var ev = ev || window.event; //获取event对象
+	left=(ev.pageX - $('#c1').offset().left)*(1/canvasSize);
+	top=(ev.pageY - $('#c1').offset().top)*(1/canvasSize);
+	//left=ev.pageX - $('#c1').offset().left;
+	//top= ev.pageY - $('#c1').offset().top;
+	oCG.lineTo(left,top);
+	oCG.stroke();
+	pd=null;
+	if(iWidth!=0&&iWidth!=null)
+	{
+		pd=range(left,top);
+	}
+	if(pd!=null)
+	{
+		pdleft=pd.x;
+		pdright=pd.y;
+	} 
+	pathList.push({ name: "lineTo", x:pdleft||left, y:pdright||top });
+	pathList.push({ name: "stroke" });
+	param.list=pathList;
+	if (pathList && pathList.length > 100) {
+		  //draw(pathList);
+	//100个点发送一次 ,可调节
+		var canvasData={
+				SeqNo:1,
+				nMeetingID:parseInt($("#c_r_right_title3").attr("nMeetingID")),
+				nCurPage:canvasCurPage,
+				nTotalPage:canvasTotalPage,
+				strPicHttpAddr:canvasImgSrc,
+				nOperate:param.operation,//操作号 1
+				nClientType:1,//端口识别1 pc  2手机
+				strContent:$.trim(JSON.stringify(param)).replace(/"/g,'\\\"')
+			};
+		  myOcxMsg.updateWhiteboard(canvasData);
+	pathList= new Array();
+	}
+}
+
+    document.onmouseup = function(event) {
+    //发送剩余的点
+        document.onmousemove = null;
+        document.onmouseup = null;
+        param.list=pathList;
+        if (pathList) {
+            //draw(pathList);
+            var canvasData={
+                SeqNo:1,
+                nMeetingID:parseInt($("#c_r_right_title3").attr("nMeetingID")),
+                nCurPage:canvasCurPage,
+                nTotalPage:canvasTotalPage,
+                strPicHttpAddr:canvasImgSrc,
+                nOperate:param.operation,
+                nClientType:1,
+                strContent:$.trim(JSON.stringify(param)).replace(/"/g,'\\\"')
+            };
+            myOcxMsg.updateWhiteboard(canvasData);
+            pathList = new Array();
+        }
+    };
+};
+//开始白板分享
+var startWhite=function(nShareType){
+    canvasTotalPage = 0;
+    canvas();
+    var data={
+        SeqNo:1,
+        nMeetingID:parseInt($("#c_r_right_title3").attr("nMeetingID")),
+        nShareType:nShareType,
+        success:function(){},
+        error:function(err){
+        if (err.nResultCode=='1720410016') {
+         errorMsg("c_right","会议已存在白板分享！")
+         //alert('');
+        }
+        }
+    }
+    myOcxMsg.startWhiteboardShare(data);
+}
+//结束白板分享
+var endWhite=function(){
+    var data={
+    SeqNo:1,
+    nMeetingID:parseInt($("#c_r_right_title3").attr("nMeetingID"))||myMeetingId,
+    success:function(data){
+        canvasImgSrc = "";
+        canvasTotalPage = 1;
+        canvasCurPage = 0;
+    },
+    error:function(err){
+      if (err.nResultCode=='1720410015') {
+       errorMsg("c_right","您不是白板分享发起人，无权限结束白板分享！")
+       //alert('');
+      }
+    }
+    }
+    myOcxMsg.stopWhiteboardShare(data);
+}
+//白板状态推送
+var whiteStatus=function(data){
+    if(data.nStatus==1)
+    {
+        enterWhite();
+    }
+    else if(data.nStatus==0)
+    {
+        exitWhiteboard();
+    }
+}
+var init=function(){
+    //初始化
+    pathList = new Array();//已画list
+    isEraser=false;//橡皮擦
+    isLaser=false;//激光笔
+    isHighLighter=false;//荧光笔
+    //isColorShow=false;//颜色工具
+    myColor='black';//默认颜色
+	iHeight=null;
+	iWidth=null;
+    lineWidth=2;
+    oCG.globalAlpha=1;
+    oCG.strokeStyle=myColor;
+    oCG.lineWidth =lineWidth;
+    oCG1.globalAlpha=1;
+    oCG1.strokeStyle=myColor;
+    oCG1.lineWidth = lineWidth;
+    param={
+        strokeStyle:myColor,
+        globalAlpha:1,
+        lineWidth:lineWidth,
+        operation:1,
+        canvasWidth:$(oC).attr("width")||600,
+        canvasHeight:$(oC).attr("height")||400,
+		pImgheight:null,
+	    pImgwidth:null,
+		p0left:null,
+		p0right:null,
+		scale:1,//默认缩放比例
+        globalCompositeOperation:'source-over',
+        list:pathList
+   };
+   //初始化还原canvas大小
+   canvasSize=1.0;
+   oC.style.width=param.canvasWidth+"px";
+   oC.style.height=param.canvasHeight+"px"; 
+}
+//canvas  web端放大缩小 
+var canvasSize=1.0;
+var w=null;//parseInt(oC.offsetWidth);
+var h=null;//parseInt(oC.offsetHeight);
+function zoomout() { 
+	if(canvasSize>=3.0)
+	{
+		return ;
+	}
+	canvasSize=canvasSize+0.1;
+	param.scale=canvasSize;
+    oC.style.width=(w*canvasSize)+"px";
+    oC.style.height=(h*canvasSize)+"px";
+} 
+function zoomin() { 
+	if(canvasSize<=1.0){
+		return ;
+	}
+	canvasSize=canvasSize-0.1;
+	param.scale=canvasSize;
+    oC.style.width=(w*canvasSize)+"px";
+    oC.style.height=(h*canvasSize)+"px"; 
+} 
+function setCanvasSize(){
+	
+	oC.style.backgroundImage = 'url('+canvasImgSrc+')';  
+}
+//开始文件转换
+function sendMessageAction(s, info, desc){
+    if($("#canvas").attr("dataCanvas")==0){
+      return;
+    }
+    if(s == ""){
+    }else{
+        var strFilePath = JSON2.stringify(s);
+        errorMsg1("c_right","开始文件转换！")
+        var req={
+              SeqNo:6,
+              strFilePath:s,
+              success:function(response){
+              },
+              error:function(response){}
+        };
+        myOcxMsg.startFileConvert(req);
+    }
+}
+
+$(function(){
+  myOcxMsg.notifyWhiteboardStatus(whiteStatus);
+  myOcxMsg.notifyUpdateWhiteboard(getDraw);  //白板内容推送
+});
