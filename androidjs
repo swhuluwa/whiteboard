@@ -1,0 +1,835 @@
+
+var oC = document.getElementById('c1');
+$(window).resize(resizeCanvas);
+function resizeCanvas() {
+   
+ $(oC).attr("width", $(window).get(0).innerWidth);  
+
+ $(oC).attr("height", $(window).get(0).innerHeight);     
+   
+ //context.fillRect(0, 0, canvas.width(), canvas.height());  
+}; 
+   
+resizeCanvas();  
+
+var oCG = oC.getContext('2d');
+
+oCG.lineCap='round';
+
+oCG.lineJoin='round';
+
+oCG.imageSmoothingEnabled = true;
+
+var flag=false;
+
+//oCG.lineWidth=2;//默认尺寸
+
+oCG.translate(0.5, 0.5);
+
+oCG.lineWidth=2;//默认尺寸
+
+var pathList = new Array();//已画list
+
+var allList=new Array();//所有数据
+
+var repaintList=new Array();//撤销list
+
+var lineWidth=2;//画笔宽度
+
+var isEraser=false;//橡皮擦
+
+var isLaser=false;//激光笔
+
+var isHighLighter=false;//荧光笔
+
+var myColor='black';//当前颜色
+
+var isColorShow=false;//颜色工具
+
+var globalAlpha=1;//透明度设置
+
+var iWidth=null,//图片宽高
+    iHeight=null;
+
+var globalCompositeOperation='source-over';
+
+/* var penElement=document.getElementById('pen');//钢笔element
+
+var laserElement=document.getElementById('laser');//激光笔element
+
+var colorElement=document.getElementById('color');//显示调色板element
+
+var eraserElement=document.getElementById('eraser');//橡皮element
+
+var clearRectElement=document.getElementById('clearRect');//清空element
+
+var colorTool=document.getElementById('colorTool');//调色板element
+
+var ImgTool=document.getElementById('Imgshow');//切换工具栏图标
+
+var ptool=document.getElementById('ptool');//切换工具栏 */
+			
+var param={//初始化
+    nCurPage:0,
+    nTotalPage:0,
+    strPicHttpAddr:"",
+    
+	strokeStyle:myColor,
+	lineWidth:lineWidth,
+	globalAlpha:globalAlpha,
+	operation:'1',
+	canvasWidth:parseInt($(window).get(0).innerWidth),
+	canvasHeight:parseInt($(window).get(0).innerHeight),
+	pImgheight:null,
+	pImgwidth:null,
+	p0left:null,
+	p0right:null,
+	scale:1,//默认缩放比例
+	globalCompositeOperation:globalCompositeOperation,
+	list:pathList
+};    
+function draw(list1,width,height,scale,nClientType,pw,ph) {
+	for (var i = 0; i < list1.length; i++) {
+		var item =null;
+		item= list1[i];
+		switch (item.name) {
+			case "moveTo":
+				oCG.beginPath();
+				if(nClientType==3)//3:ios
+				{
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.moveTo(param.p0left*param.scale+item.x/(pw)*(param.pImgwidth*param.scale),param.p0right*param.scale+item.y/(ph)*(param.pImgheight*param.scale));
+					}
+					else
+					{
+						oCG.moveTo(item.x/(width)*(param.canvasWidth*param.scale), item.y/(height)*(param.canvasHeight*param.scale));
+					}
+				 
+				}
+				else if(nClientType==2)//2  andrioid
+				{
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.moveTo(param.p0left*param.scale+item.x/(pw*scale)*(param.pImgwidth*param.scale),param.p0right*param.scale+ item.y/(ph*scale)*(param.pImgheight*param.scale));
+					}
+					else
+					{
+					  oCG.moveTo(item.x/(width*scale)*(param.canvasWidth*param.scale), item.y/(height*scale)*(param.canvasHeight*param.scale));	
+					}
+					
+				}
+				else if(nClientType==1)//1 pc
+				{
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+					    //alert(param.p0left+'scale:'+param.scale+'x'+ item.x +'pw:'+ pw+'imgwidth'+param.pImgwidth+'height:'+param.p0right+'y'+ item.y+'ph:'+ph+'imgHeight'+param.pImgheight)
+						oCG.moveTo(param.p0left*param.scale+ item.x/(pw)*(param.pImgwidth*param.scale),param.p0right*param.scale+ item.y/(ph)*(param.pImgheight*param.scale));
+					}
+					else
+					{
+						oCG.moveTo(item.x/(width)*(param.canvasWidth*param.scale), item.y/(height)*(param.canvasHeight*param.scale));
+					}
+					
+				}
+				break;
+			case "lineTo":
+			    if(nClientType==3)//ios
+				{
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.lineTo(param.p0left*param.scale+item.x/(pw)*(param.pImgwidth*param.scale), param.p0right*param.scale+item.y/(ph)*(param.pImgheight*param.scale));
+					}
+					else
+					{
+						oCG.lineTo(item.x/(width)*(param.canvasWidth*param.scale), item.y/(height)*(param.canvasHeight*param.scale));
+					}
+					
+				}
+				else if(nClientType==2)//andrioid
+				{
+					
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						oCG.lineTo(param.p0left*param.scale+item.x/(pw*scale)*(param.pImgwidth*param.scale),param.p0right*param.scale+ item.y/(ph*scale)*(param.pImgheight*param.scale));
+					}
+					else
+					{
+						oCG.lineTo(item.x/(width*scale)*(param.canvasWidth*param.scale), item.y/(height*scale)*(param.canvasHeight*param.scale));
+					}
+					
+				}
+				else if(nClientType==1)//pc
+				{
+					
+					if(pw!=''&&pw!=null&&ph!=''&&ph!=null)
+					{
+						  //alert(param.p0left+'scale:'+param.scale+'x'+ item.x +'pw:'+ pw+'imgwidth'+param.pImgwidth+'height:'+param.p0right+'y'+ item.y+'ph:'+ph+'imgHeight'+param.pImgheight)
+						oCG.lineTo(param.p0left*param.scale+item.x/(pw)*(param.pImgwidth*param.scale),param.p0right*param.scale+ item.y/(ph)*(param.pImgheight*param.scale));
+					}
+					else
+					{
+						
+						oCG.lineTo(item.x/(width)*(param.canvasWidth*param.scale), item.y/(height)*(param.canvasHeight*param.scale));
+					}
+					
+				}
+				break;
+			case "stroke":
+				oCG.stroke();
+				oCG.closePath();
+				break;
+			case "move":
+			    //弃用
+				oCG.beginPath();
+				oCG.rect(0, 0, oC.width, oC.height);
+				oCG.fillStyle = 'white';
+				oCG.fill();
+				oCG.drawImage(oC1,0,0,oC1.width, oC1.height);
+				oCG.fillStyle = 'red';
+				oCG.lineWidth = 2;
+				// Draw particle with $1000000 special effects
+				oCG.beginPath();
+				oCG.arc(item.x, item.y, 5, 0, 1, true);
+				oCG.fill();
+				break;
+		}
+	}
+	//还原本地设置
+    oCG.strokeStyle=myColor;
+    oCG.lineWidth = lineWidth;
+    oCG.globalCompositeOperation=globalCompositeOperation;
+}
+//激光笔
+function laser(value){
+	isLaser=value;
+	if(isLaser==false){
+    param.operation=1;
+	}
+	else{
+    param.operation=3;
+	}				
+}
+/* function colorToolShow(){
+	isColorShow=!isColorShow;
+	var colorTool=document.getElementById('colorTool'); //$('#colorTool');
+	if (isColorShow) {
+		var color=document.getElementById('color');// $('#color');
+		colorTool.style.display='';
+		colorTool.style.left=parseInt(color.offsetLeft)-140+'px';
+		colorTool.style.bottom=parseInt(color.offsetTop)+50+'px';
+	}
+	else
+	{
+		colorTool.style.display='none';
+	}
+}  */
+function changeColor(e){
+   myColor=e;//e.target.style.backgroundColor;
+   oCG.strokeStyle=myColor;
+   param.strokeStyle=myColor;
+   /* if (oCG.strokeStyle!='white'&&oCG.strokeStyle!='#ffffff') {
+   oCG.strokeStyle=myColor;
+   param.strokeStyle=myColor;
+   }
+   colorToolShow(); */
+}	
+function clearRect(){
+	//清空canvas
+	oCG.beginPath(); 
+	oCG.clearRect(0,0,oC.width,oC.height); 
+	oCG.closePath(); 
+	param.operation=2;
+	param.list=[];
+  	var canvasData={
+		SeqNo:1,
+		nCurPage:param.nCurPage,
+		nTotalPage:param.nTotalPage,
+		strPicHttpAddr:canvasImgSrcCurrent,
+		nClientType:2,
+		nOperate:param.operation,
+		strContent:JSON.stringify(param).trim().replace(/"/g,'\\\"')
+		};
+	postMsgToMobile(canvasData);
+	param.operation=1;
+};
+
+function clearRectSelf(){
+	oC.style.backgroundImage = 'none';
+	param.nCurPage = 0;
+	oCG.beginPath(); 
+	oCG.clearRect(0,0,oC.width,oC.height); 
+	oCG.closePath(); 
+	init();
+	end();
+}
+function end(){
+	JSBridge.end();
+}
+function getDraw(data){
+
+	//对方接收到消息，描绘canvas
+  var getListMsg=null;
+  
+ 
+  var strPicHttpAddr = JSON.parse(data).strPicHttpAddr;
+ 
+  var lstOperations=JSON.parse(data).lstOperations;
+
+  var len=lstOperations.length,nClientType=null;
+  
+ 
+  //alert('canvas width:'+oC.width+'canvas height:'+oC.height+'window width:'+parseInt($(window).get(0).innerWidth)+'window height:'+parseInt($(window).get(0).innerHeight))
+  param.nTotalPage = JSON.parse(data).nTotalPage;
+  if(param.nCurPage != JSON.parse(data).nCurPage||canvasImgSrcCurrent != strPicHttpAddr){
+  	  oCG.beginPath(); 
+      oCG.clearRect(0,0,oC.width,oC.height); 
+      oCG.closePath();
+	 if(scale==1.0&&oC.width<parseInt($(window).get(0).innerWidth))
+	 {
+		resizeCanvas();
+     }
+	  
+  	  oC.style.backgroundImage = 'url('+strPicHttpAddr+')';
+  	  //oC.style.backgroundImage = 'url(http://192.168.1.84:8280/ECSFileServer/upload/ecsfile/180505/142150616.JPG)';
+  	  canvasImgSrcCurrent = strPicHttpAddr;
+	 
+  	  param.nCurPage = JSON.parse(data).nCurPage;
+  }
+    param.canvasHeight= parseInt($(window).get(0).innerHeight);//alert("width:"+$(window).get(0).innerWidth+"height:"+$(window).get(0).innerHeight);
+  param.canvasWidth=parseInt($(window).get(0).innerWidth); 
+  iHeight=JSON.parse(data).nPicHeight;
+  iWidth=JSON.parse(data).nPicWidth;
+  if(iHeight!=''&&iWidth!=''&&iHeight&&iWidth)
+  {
+	range(0,0);  
+  }
+  var msg=null;
+
+  oCG.lineCap = "round";　　//设置线条两端为圆弧
+  oCG.lineJoin = "round";　
+  for(var m=0;m<len;m++)
+  {
+      msg=lstOperations[m].strContent;
+	  
+	   nClientType=lstOperations[m].nClientType;
+      getListMsg=JSON.parse(msg);
+	  if(getListMsg.operation==2)
+	  { 
+		oCG.beginPath(); 
+		oCG.clearRect(0,0,oC.width,oC.height); 
+		oCG.closePath(); 
+	  }
+	  else if(getListMsg.operation==1){
+	   oCG.strokeStyle=getListMsg.strokeStyle;
+	   oCG.lineWidth = getListMsg.lineWidth;
+	   oCG.globalCompositeOperation=getListMsg.globalCompositeOperation;
+	  }
+	  var list=null,width=null,height=null,scale=null,pw=null,ph=null;
+	  list=getListMsg.list;
+	  width=getListMsg.canvasWidth;
+	  height=getListMsg.canvasHeight;
+	  scale=getListMsg.scale;
+	  pw=getListMsg.pImgwidth;
+	  ph=getListMsg.pImgheight;
+	  if(list&&list.length>0){
+		 draw(list,width,height,scale,nClientType,pw,ph); 
+	  }
+  }
+  delete getListMsg,lstOperations,len,msg;
+}
+function pen(){
+	lineWidth=2;
+	eraser(false);
+	highLighter(false);
+}
+
+//荧光笔
+function highLighter(value){
+    isHighLighter=value;
+	if (isHighLighter) {
+		isHighLighter=true;
+		isEraser=false;
+		lineWidth=6;
+		//globalAlpha=0.2;
+		//设置本地画布数据
+		oCG.save();
+		oCG.strokeStyle=myColor;
+		//oCG.globalAlpha = globalAlpha;
+		oCG.lineWidth = 6;
+		//设置传参画布数据
+		param.strokeStyle=myColor;
+		//param.globalAlpha = globalAlpha;
+		param.lineWidth=6;
+	}else{
+		isHighLighter=false;
+		//lineWidth=2;
+		globalAlpha=1;
+		//设置本地画布数据
+		oCG.save();
+		oCG.strokeStyle=myColor;
+		//oCG.globalAlpha = globalAlpha;
+		oCG.lineWidth=lineWidth;
+		//设置传参画布数据
+		param.strokeStyle=myColor;
+		//param.globalAlpha = globalAlpha;
+		param.lineWidth=lineWidth;
+	}
+}
+function eraser(value){
+	//橡皮擦
+	isEraser=value;
+	if (isEraser) {
+		isEraser=true;
+		//lineWidth=12;
+		//myColor='white';
+		//设置本地画布数据
+		oCG.save();
+		globalCompositeOperation='destination-out';
+		oCG.globalCompositeOperation=globalCompositeOperation;
+		oCG.lineWidth = 12;
+		//设置传参画布数据
+		param.globalCompositeOperation=globalCompositeOperation;
+		param.lineWidth=12;
+	}else{
+		isEraser=false;
+		//设置本地画布数据
+		oCG.save();
+		globalCompositeOperation='source-over';
+		oCG.globalCompositeOperation=globalCompositeOperation;
+		oCG.strokeStyle=myColor;
+		oCG.lineWidth=lineWidth;
+		//设置传参画布数据
+		param.globalCompositeOperation=globalCompositeOperation;
+		param.strokeStyle=myColor;
+		param.lineWidth=lineWidth;
+	}
+};
+var switchImg=function(event){
+    //点击效果，切换canvas工具栏图片
+    var ev=event||window.event; 
+    var tool=event.currentTarget.id;
+    var parent=document.getElementById("ptool");
+    for(var i=0;i<parent.children.length;i++){
+    	var style=null;
+    	var item=null;
+    	item=parent.children[i];
+    	var itemChild=null;
+    	itemChild=item.children[0];
+    	var itemStyle=null;
+    	itemStyle=item.id;
+    	style=itemStyle==tool?"selected":"normal";
+    	 switch(itemStyle){
+    		case "laser":
+            itemChild.src="img/yinguangbi_"+style+".png";
+            break;
+            case "pen":
+            itemChild.src="img/gangbi_"+style+".png";
+            break;
+            case "color":
+            itemChild.src="img/yanse_"+style+".png";
+            break;
+            case "eraser":
+            itemChild.src="img/xiangpica_"+style+".png";
+            break;
+            case "clearRect":
+            itemChild.src="img/qingchu_"+style+".png";
+            break;
+            case "default":
+            break;
+           }
+           delete style;
+           delete item;
+           delete itemChild;
+           delete itemStyle;
+        }
+        delete ev,tool,parent;
+    }
+ var undo=function(){
+     //撤销
+ };
+ var mLeft=null,mTop=null;
+ function OcMouseDown(ev) {
+	ev.preventDefault();
+	
+	var ev = ev || window.event;
+	//oCG.beginPath();
+	var touch = ev.touches;
+	//oCG.moveTo(touch[0].pageX-oC.offsetLeft, touch[0].pageY-oC.offsetTop); //ev.clientX-oC.offsetLeft,ev.clientY-oC.offsetTop鼠标在当前画布上X,Y坐标
+    mLeft=touch[0].pageX-oC.offsetLeft;
+	mTop=touch[0].pageY-oC.offsetTop;
+	oCG.lineCap = "round";　　//设置线条两端为圆弧
+    oCG.lineJoin = "round";　　//设置线条转折为圆弧
+    param.canvasHeight= parseInt($(window).get(0).innerHeight);//alert("width:"+$(window).get(0).innerWidth+"height:"+$(window).get(0).innerHeight);
+    param.canvasWidth=parseInt($(window).get(0).innerWidth);
+     if (isEraser) {
+     	globalCompositeOperation="destination-out";
+	    oCG.globalCompositeOperation = globalCompositeOperation;
+	    param.globalCompositeOperation=globalCompositeOperation;
+	    oCG.save();
+	    oCG.beginPath();
+	    oCG.arc(mLeft,mTop,1,0,2*Math.PI);
+	    oCG.fill();
+	    oCG.restore();
+	  }
+	  else
+	  {
+	  	 globalCompositeOperation="source-over";
+	     oCG.globalCompositeOperation = globalCompositeOperation;
+	     param.globalCompositeOperation=globalCompositeOperation;
+	  }
+	delete ev;
+	delete touch;
+};
+function moveEnd(event){
+  event.preventDefault();
+  param.list=pathList;
+  if(pathList) {
+	var canvasData={
+		SeqNo:1,
+		nCurPage:param.nCurPage,
+		nTotalPage:param.nTotalPage,
+		strPicHttpAddr:canvasImgSrcCurrent,
+		nClientType:2,
+		nOperate:param.operation,
+		strContent:JSON.stringify(param).trim().replace(/"/g,'\\\"')
+	};
+
+    postMsgToMobile(canvasData);
+	pathList = new Array();
+ }
+}
+function mouseMove(event){
+	event.preventDefault();
+	oCG.beginPath();
+	if (oCG.strokeStyle!=param.strokeStyle) {
+        oCG.strokeStyle=param.strokeStyle;
+	 }
+	if (oCG.lineWidth!=param.lineWidth) {
+	 	oCG.lineWidth=param.lineWidth;
+	}
+	if (oCG.lineCap!='round'){
+		oCG.lineCap='round';
+		oCG.lineJoin='round';
+	}
+	var pd=null;
+	oCG.moveTo(mLeft, mTop);
+	var pdleft=null,pdright=null;
+	//2018年5月17日09:40:49  修改
+	if(iWidth!=null&&iWidth!=0)
+	{
+		pd=range(mLeft,mTop);
+	}
+	if(pd!=null)
+	{
+		pdleft=pd.x;
+		pdright=pd.y;
+	} 
+	//2018年5月17日09:40:57 修改
+	pathList.push({ name: "moveTo", x: pdleft||mLeft, y: pdright||mTop});
+	var ev = event || window.event; //获取event对象
+	var touch = ev.touches;
+    if (Math.abs(parseFloat(touch[0].pageX-oC.offsetLeft)-mLeft)>100||Math.abs(parseFloat(touch[0].pageY-oC.offsetTop)-mTop)>100) {
+    	//取两点X、Y绝对值，避免乱点引起连线问题
+    	return ;
+    }
+	mLeft=parseFloat(touch[0].pageX-oC.offsetLeft);
+    mTop =parseFloat(touch[0].pageY-oC.offsetTop);
+	oCG.lineTo(mLeft,mTop);
+	oCG.stroke();
+	//修改
+	pd=null,pdleft=null,pdright=null;
+	if(iWidth!=null&&iWidth!=0)
+	{
+		pd=range(mLeft,mTop);
+	}
+	if(pd!=null)
+	{
+		pdleft=pd.x;
+		pdright=pd.y;
+	} 
+	pathList.push({ name: "lineTo", x:pdleft||mLeft, y:pdright||mTop});
+	//修改
+	pathList.push({ name: "stroke" });
+	param.list=pathList;
+	if (pathList && pathList.length > 100) {//每次取100个点发送
+	  	var canvasData={
+			SeqNo:1,
+			nCurPage:param.nCurPage,
+		    nTotalPage:param.nTotalPage,
+			strPicHttpAddr:canvasImgSrcCurrent,
+		    nClientType:2,
+			nOperate:param.operation,
+			strContent:JSON.stringify(param).trim().replace(/"/g,'\\\"')
+		};
+		postMsgToMobile(canvasData);
+	    pathList= new Array();//重置数组
+	}
+	delete ev;
+	delete touch;
+}
+function laserMove(event){
+    var ev = ev || window.event;
+    ev.preventDefault();
+    var touch = ev.touches;
+    pathList.push({name:'move',x:touch[0].pageX-oC.offsetLeft,y:touch[0].pageY-oC.offsetTop});
+    param.list=pathList;
+    if (pathList) {
+    	var canvasData={
+			SeqNo:1,
+			nCurPage:param.nCurPage,
+		    nTotalPage:param.nTotalPage,
+			strPicHttpAddr:canvasImgSrcCurrent,
+			nOperate:param.operation,
+			nClientType:2,
+			strContent:$.trim(JSON.stringify(param)).replace(/"/g,'\\\"')
+		};
+		postMsgToMobile(canvasData);	
+		pathList = new Array();
+    }
+}
+function init(){
+	//初始化
+	pathList = new Array();//已画list
+	isEraser=false;//橡皮擦
+	isLaser=false;//激光笔
+	isHighLighter=false;//荧光笔
+	isColorShow=false;//颜色工具
+	myColor='black';//默认颜色
+	iHeight=null;
+	iWidth=null;
+	lineWidth=2;
+	oCG.globalAlpha=1;
+	oCG.strokeStyle=myColor;
+    oCG.lineWidth = lineWidth;
+    param={
+	 strokeStyle:myColor,
+	 globalAlpha:1,
+	 lineWidth:lineWidth,
+	 p0left:null,
+	 p0right:null,
+	 pImgheight:null,
+	 pImgwidth:null,
+	 canvasWidth:parseInt($(window).get(0).innerWidth),
+	 canvasHeight:parseInt($(window).get(0).innerHeight),
+	 scale:1,
+	 operation:1,
+	 list:pathList
+    };
+	flag=false;
+	//resizeCanvas();//还原初始宽高
+	//window.location.reload();//页面重新加载，还原默认
+	resizeCanvas();
+}
+
+function range(w,h){
+	var offsetLeft=oC.offsetLeft,//左距离X  CANVAS(offsetLeft,offsetTop)
+	    offsetTop=oC.offsetTop,//上距离Y
+		oCwidth=param.canvasWidth,//宽高
+		oCheight=param.canvasHeight,
+		centerW=oCwidth/2,//一半宽高
+		centerH=oCheight/2,
+		offsetRight=parseFloat(offsetLeft)+parseFloat(oCwidth),//右距离X
+		offsetBottom=parseFloat(offsetTop)+parseFloat(oCheight),//下距离Y
+		imgWidth=iWidth,//imgObj.width,
+		imgHeight=iHeight,//imgObj.height,
+		pImgwidth=null,
+		pImgheight=null;
+		
+	
+		
+	if(oCwidth/imgWidth>oCheight/imgHeight){
+		pImgwidth=oCheight/imgHeight*imgWidth;
+		pImgheight=oCheight;
+	}
+	else{
+		pImgheight=oCwidth/imgWidth*imgHeight;
+		pImgwidth=oCwidth;
+	}
+    var oCpImgwidth=pImgwidth/2,
+		oCpImgheight=pImgheight/2;//canvas img (centerW-oCpImgwidth+offsetLeft,centerH-oCpImgheight+offsetTop)
+	param.pImgheight=pImgheight;
+	param.pImgwidth=pImgwidth;
+	var p={
+		x:centerW-oCpImgwidth+parseFloat(offsetLeft),
+		y:centerH-oCpImgheight+parseFloat(offsetTop)
+	};
+	param.p0left=p.x;
+	param.p0right=p.y;
+	var p0={
+		x:p.x+parseFloat(pImgwidth),
+		y:p.y+parseFloat(pImgheight)
+	};
+	var x=parseFloat(p.x*param.scale),
+	y=parseFloat(p.y*param.scale);
+	return({
+		x:w-x,
+		y:h-y,
+		w:pImgwidth,
+		h:pImgheight
+	});
+	
+	
+	
+}
+
+
+window.onload=function(){
+	resizeCanvas();
+	JSBridge.onloadMobile();
+}
+var postMsgToMobile=function(param){
+	//发送数据至移动端
+	//window.webkit.messageHandlers.<对象名>.postMessage(<数据>)
+	JSBridge.post(param.strContent,parseInt(param.nOperate),parseInt(param.nCurPage),parseInt(param.nTotalPage),param.strPicHttpAddr);
+}
+function getMsgFromMobile(param){
+	//从移动端获取数据
+	getDraw(param);
+}
+function mobileFingers(scale){
+	//移动端手指事件
+	if(scale<1){
+		scale=1.0;
+	}
+	
+	if(flag==false){
+		scale=1.0;
+		flag=true;
+		
+	}
+
+	param.scale=scale;
+	
+}
+
+var canvasImgSrcCurrent = "";
+var mobileTurnPage=function(page){
+	var page1;
+    if(page=='left'){
+    	if(parseInt(param.nCurPage)==param.nTotalPage){
+    		return;
+    	}
+        page1=parseInt(param.nCurPage)+1;
+    }else{
+    	if(parseInt(param.nCurPage)==1){
+    		return;
+    	}
+        page1=parseInt(param.nCurPage)-1;
+    }
+    oCG.beginPath(); 
+	oCG.clearRect(0,0,oC.width,oC.height); 
+	oCG.closePath();
+    //var canvasImgSrc = param.strPicHttpAddr;
+    var idx0 = canvasImgSrcCurrent.lastIndexOf('/');
+    var idx1 = canvasImgSrcCurrent.lastIndexOf('.');
+    s1 = canvasImgSrcCurrent.substring(0,idx0+1);
+    s2 = canvasImgSrcCurrent.substring(idx1,canvasImgSrcCurrent.length);
+    param.strPicHttpAddr = s1+page1+s2;  
+    var data = {
+          strContent:'',
+          nOperate:5,
+          nCurPage:page1,
+          nTotalPage:param.nTotalPage,
+          strPicHttpAddr:param.strPicHttpAddr
+    }
+    postMsgToMobile(data);
+}
+function mobilePen(){
+	//手机调用钢笔事件
+	pen();
+}
+function mobileHighLighter(){
+	//手机调用荧光笔事件
+	highLighter(true);
+}
+function mobilEraser(){
+	//手机调用橡皮擦事件
+	eraser(true);
+}
+function mobileClearRect(){
+	//手机调用清空事件
+	clearRect();
+}
+function mobileColor(param){
+	//手机调用颜色改变事件
+	changeColor(param);
+}
+function mobileShow(){
+	//手机调用工具栏展开事件
+	oC.addEventListener('touchend',moveEnd,false);
+	oC.addEventListener('touchmove',mouseMove, false);
+	oC.addEventListener('touchstart',OcMouseDown, false);
+}
+function mobileHide(){
+	//手机调用工具栏隐藏事件
+	oC.removeEventListener('touchend',moveEnd,false);
+	oC.removeEventListener('touchmove',mouseMove, false);
+	oC.removeEventListener('touchstart',OcMouseDown, false);
+}
+(function(){
+	//alert(parseInt($(window).get(0).innerWidth)+'h:'+parseInt($(window).get(0).innerHeight))
+resizeCanvas();  
+})();
+/* for(var i=0;i<colorTool.children.length;i++){
+	colorTool.children[i].addEventListener('touchstart',changeColor,false);
+} */
+
+
+/* oC.addEventListener('touchend',moveEnd,false);
+oC.addEventListener('touchmove',mouseMove, false);
+oC.addEventListener('touchstart',OcMouseDown, false); */
+/* penElement.addEventListener('touchstart',function(e){
+	e.preventDefault();
+	e.cancelBubble = true;
+	pen();
+	switchImg(e);
+},false);
+laserElement.addEventListener('touchstart',function(e){
+	e.preventDefault();
+	e.cancelBubble = true;
+	highLighter(true);
+	switchImg(e);
+},false);
+colorElement.addEventListener('touchstart',function(e){
+	e.preventDefault();
+	e.cancelBubble = true;
+	colorToolShow();
+    switchImg(e);
+},false);
+eraserElement.addEventListener('touchstart',function(e){
+	e.preventDefault();
+	e.cancelBubble = true;
+	eraser(true);
+	switchImg(e);
+},false);
+clearRectElement.addEventListener('touchstart',function(e){
+	e.preventDefault();
+	e.cancelBubble = true;
+	clearRect();
+	switchImg(e);
+},false);
+ImgTool.addEventListener('touchstart',function(e){
+	e.preventDefault();
+	ImgTool.style.display='none';
+	ptool.className="flexContent";
+	oC.addEventListener('touchend',moveEnd,false);
+	oC.addEventListener('touchmove',mouseMove, false);
+	oC.addEventListener('touchstart',OcMouseDown, false);
+},false);
+ptool.addEventListener('touchstart',function(e){
+	e.preventDefault();
+	ImgTool.style.display='';
+	alert('no touchevent');
+	ptool.className='flexContentNone';
+	oC.removeEventListener('touchend',moveEnd,false);
+	oC.removeEventListener('touchmove',mouseMove, false);
+	oC.removeEventListener('touchstart',OcMouseDown, false);
+	if (isColorShow) {
+		colorToolShow();
+	}
+	else{
+       //TODO
+	}
+},false);           
+ */
